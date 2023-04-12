@@ -4,51 +4,50 @@ from base64 import b64encode, b64decode
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
-isdebug = False
 
-def modifyPixels(pix, data):
+def modifyPixels(pixels, data):
     """Given an image's getdata(), and a payload will loop through and provide an updated list of pixels to iterate through at the higher level"""
     datalist = []
     for i in data:
         # create list of 8 bit binary values for each character in the message
         datalist.append(format(ord(i), '08b'))
-    imdata = iter(pix)
+    imdata = iter(pixels)
 
     # Loop through the pixels in the image
     for i in range(len(datalist)):
         # Get the next three color channel values from the iterator
-        pix = [value for value in imdata.__next__()[:3] +
+        pixels = [value for value in imdata.__next__()[:3] +
                imdata.__next__()[:3] +
                imdata.__next__()[:3]]
 
         # Loop through the bits of the binary message
         for j in range(0, 8):
             # Modify the color channel value if necessary to encode the bit
-            if (datalist[i][j] == '0' and pix[j] % 2 != 0):
-                pix[j] -= 1
-            elif (datalist[i][j] == '1' and pix[j] % 2 == 0):
-                if(pix[j] != 0):
-                    pix[j] -= 1
+            if (datalist[i][j] == '0' and pixels[j] % 2 != 0):
+                pixels[j] -= 1
+            elif (datalist[i][j] == '1' and pixels[j] % 2 == 0):
+                if(pixels[j] != 0):
+                    pixels[j] -= 1
                 else:
-                    pix[j] += 1
+                    pixels[j] += 1
         # If this is the last pixel, modify the least significant bit of the blue channel
         # to indicate the end of the message
         if (i == len(datalist) - 1):
-            if (pix[-1] % 2 == 0):
-                if(pix[-1] != 0):
-                    pix[-1] -= 1
+            if (pixels[-1] % 2 == 0):
+                if(pixels[-1] != 0):
+                    pixels[-1] -= 1
                 else:
-                    pix[-1] += 1
+                    pixels[-1] += 1
         # Otherwise, modify the least significant bit of the blue channel to be even
         else:
-            if (pix[-1] % 2 != 0):
-                pix[-1] -= 1
+            if (pixels[-1] % 2 != 0):
+                pixels[-1] -= 1
 
         # Convert the modified pixel values back to a tuple (r,g,b) and yield them
-        pix = tuple(pix)
-        yield pix[0:3]
-        yield pix[3:6]
-        yield pix[6:9]
+        pixels = tuple(pixels)
+        yield pixels[0:3]
+        yield pixels[3:6]
+        yield pixels[6:9]
 
 def encryptMessage(message, password):
     """Given a message and a password, will generate a list of integers as a secret and return an encrypted payload"""
@@ -154,7 +153,7 @@ def getOutputName(image_path):
     
     return output_name
 
-def run():
+def run(useencryption):
     """The menu of the application"""
     while(True):
         userinput = int(input("Steganography Tool\n 1. Hide a message \n 2. Retrieve a message \n 3. Exit \n"))
@@ -163,24 +162,31 @@ def run():
                 image_path = input("Enter image path\n")
                 validateImagePath(image_path)
                 message = input("Enter the message\n")
-                header = input("What was the pre-agreed password\n")
-                encryptedPayload = encryptMessage(message, header)
-                if isdebug:
-                    print(encryptedPayload)
-                validateImageSizePayload(image_path, encryptedPayload)
-                hidePayload(image_path, getOutputName(image_path),encryptedPayload)
+                payload = ''
+                if useencryption:
+                    password = input("What was the pre-agreed password\n")
+                    payload = encryptMessage(message, password)
+                    print("Encrypted Payload: " + payload)
+                else:
+                    payload = message
+                validateImageSizePayload(image_path, payload)    
+                hidePayload(image_path, getOutputName(image_path), payload)
             elif (userinput == 2):
                 image_path = input("Enter image path\n")
                 validateImagePath(image_path)
                 payload = retrievePayload(image_path)
-                validatePayload(payload)
-                print("Found payload: " + payload)
-                keyString = input("Enter the keylist separated by commas\n")
-                keyListString = keyString.split(",")
-                keyList = [int(x) for x in keyListString]
-                decryptedMessage, secret = decryptMessage(payload, keyList)
-                print("The message was: " + decryptedMessage)
-                print("The secret was: " + secret)
+                message = ''
+                if useencryption:
+                    validatePayload(payload)
+                    print("Found payload: " + payload)
+                    keyString = input("Enter the keylist separated by commas\n")
+                    keyListString = keyString.split(",")
+                    keyList = [int(x) for x in keyListString]
+                    message, secret = decryptMessage(payload, keyList)
+                    print("The secret was: " + secret)
+                else:
+                    message = payload
+                print("The message was: " + message)
             elif (userinput == 3):
                 quit()
             else:
@@ -190,4 +196,5 @@ def run():
             print(e)
 
 if __name__ == "__main__":
-    run()
+    useencryption = True
+    run(useencryption)
