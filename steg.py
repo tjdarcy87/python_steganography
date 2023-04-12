@@ -75,9 +75,9 @@ def decryptMessage(json_input, keyList):
     plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
     return plaintext.decode('ascii'), jv['header'].decode('ascii')
     
-def hidePayload(image_name, output_name, payload):
+def hidePayload(image_path, output_name, payload):
     """Given a image path as well as an encrypted payload, will create an _out suffixed file of the same type with the payload embedded"""
-    image = Image.open(image_name, 'r')
+    image = Image.open(image_path, 'r')
     image_copy = image.copy()
     max_size_x = image_copy.size[0]
     (x, y) = (0, 0) # start at the first pixel
@@ -92,9 +92,9 @@ def hidePayload(image_name, output_name, payload):
 
     image_copy.save(output_name, str(output_name.split(".")[1].upper())) # dynamically get the file type from the output name
 
-def retrievePayload(img):
+def retrievePayload(image_path):
     """Given an image, will return a payload if it can be found using the same formula"""
-    image = Image.open(img, 'r')
+    image = Image.open(image_path, 'r')
     data = ''
     imgdata = iter(image.getdata())
 
@@ -196,5 +196,4 @@ def run(useencryption):
             print(e)
 
 if __name__ == "__main__":
-    useencryption = True
-    run(useencryption)
+    run(useencryption = True)
